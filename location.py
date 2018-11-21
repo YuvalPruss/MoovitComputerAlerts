@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 class Location:
     def __init__(self, location_details: Dict) -> None:
         self.id = location_details.get('id')

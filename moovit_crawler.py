@@ -2,9 +2,13 @@ import json
 import requests
 import time
 from typing import List, Dict, Optional
-
 from utils.exceptions import MoovitAPIException
 from location import Location
+from bs4 import BeautifulSoup
+
+
+
+
 
 
 class MoovitUrl:
@@ -16,27 +20,55 @@ class MoovitUrl:
 
 
 class MoovitCrawler:
-    HEADERS = {
-        'accept': 'application/json, text/plain, */*',
-        'accept-encoding': 'gzip, deflate, br',
-        'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
-        'moovit_app_type': 'WEB_TRIP_PLANNER',
-        'moovit_client_version': '5.2.0.1/V567',
-        'moovit_metro_id': '1',
-        'moovit_user_key': 'F27187',
-        'rbzid': 'EA30RoO2Ems4sBH8EdUC+zOANAmB8pNMqd0VdbyuV0niFpwkM8hCeyYKQl1qtRfTxEtTj0DPXVrLRVX+ADHRYOUuCowmeGMdVzaGdJ7ZT3xzS5OhG+ZtPTHM9wNxYO811sZn5n7OkWvkCZFNvN7xrMH0qzsquT3Ne8RHQPLBB7/6W4o6hknLO1UfBQJNOyVu58hcGAZKX6JynzJOMh58gmSU5/dSry3U2c6Y45Sa3so=',
-        'referer': 'https://moovit.com/',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
-    }  # TODO change the query
+    HEADERS = {} # TODO change the query
     MAX_RESULTS_EXTRACTORS_TRIES = 10
 
     def __init__(self) -> None:
         self.session = None  # type: requests.Session
 
-    def _initiate_session(self) -> None:
+    def _initiate_session(self) -> str:
         if not self.session:
             self.session = requests.Session()
-            self.session.get('https://moovit.com/')
+            resp = self.session.get('https://moovit.com/')
+            soup = BeautifulSoup(resp.content , 'html.parser')
+            container = soup.select_one('script#rbzscr')
+            id = container.get_attribute_list('src')
+            respId = self.session.get('https://moovit.com' + id[0])
+            soupId = BeautifulSoup(respId.content, 'html.parser')
+            soupText = soupId.text
+            print(soupText)
+            return soupText[13:-2]
+
+
+    def set_headers(self, rzbid:str) -> dict:
+        if rzbid == "":
+            rzbid = 'EA30RoO2Ems4sBH8EdUC+zOANAmB8pNMqd0VdbyuV0niFpwkM8hCeyYKQl1qtRfTxEtTj0DPXVrLRVX+ADHRYOUuCowmeGMdVzaGdJ7ZT3xzS5OhG+ZtPTHM9wNxYO811sZn5n7OkWvkCZFNvN7xrMH0qzsquT3Ne8RHQPLBB7/6W4o6hknLO1UfBQJNOyVu58hcGAZKX6JynzJOMh58gmSU5/dSry3U2c6Y45Sa3so='
+            HEADERS = {
+                'a  ccept': 'application/json, text/plain, */*',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+                'moovit_app_type': 'WEB_TRIP_PLANNER',
+                'moovit_client_version': '5.2.0.1/V567',
+                'moovit_metro_id': '1',
+                'moovit_user_key': 'F27187',
+                'rbzid': rzbid,
+                'referer': 'https://moovit.com/',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
+            }
+        else:
+            HEADERS = {
+                'a  ccept': 'application/json, text/plain, */*',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+                'moovit_app_type': 'WEB_TRIP_PLANNER',
+                'moovit_client_version': '5.2.0.1/V567',
+                'moovit_metro_id': '1',
+                'moovit_user_key': 'F27187',
+                'rbzid': rzbid,
+                'referer': 'https://moovit.com/',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
+            }
+        return HEADERS
 
     @staticmethod
     def _serialize_to_json(response: requests.Response) -> Dict:
@@ -47,18 +79,16 @@ class MoovitCrawler:
                 'Failed to receive token from the API route calculator')
 
     def get_location_suggestions(self, searched_location: str) -> List:
-        self._initiate_session()
-
+        rzbid = self._initiate_session()
         query = {
             'latitude': '32081817',
             'longitude': '34781349',
             'query': searched_location,
         }
-
+        HEADERS = self.set_headers(rzbid)
         response = self.session.get(MoovitUrl.LOCATION_URL,
                                     params=query,
-                                    headers=self.HEADERS)
-
+                                    headers=HEADERS)
         json_response = self._serialize_to_json(response)
         return json_response.get('results', [])
 
@@ -89,8 +119,7 @@ class MoovitCrawler:
 
     def search_route(self, location_from: Location,
                      location_to: Location) -> Optional[List]:
-        self._initiate_session()
-
+        rzbid = self._initiate_session()
         travel_time = int(time.time() * 1000)  # TODO deal with changes
         travel_time = int((time.time() + 172800) * 1000)
 
@@ -113,10 +142,10 @@ class MoovitCrawler:
             'timeType': '2',
             'tripPlanPref': '2',
         }
-
+        HEADERS = self.set_headers(rzbid)
         response = self.session.get(MoovitUrl.ROUTE_SEARCH_URL,
                                     params=query,
-                                    headers=self.HEADERS)
+                                    headers=HEADERS)
 
         json_response = self._serialize_to_json(response)
         token = json_response.get('token')
