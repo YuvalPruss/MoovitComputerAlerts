@@ -39,18 +39,16 @@ class MoovitCrawler:
 
     def get_rzbid(self) -> str:
         resp = self._initiate_session()
-        soup = BeautifulSoup(resp.content, 'html.parser')
-        container = soup.select_one('script#rbzscr')
+        content = BeautifulSoup(resp.content, 'html.parser')
+        container = content.select_one('script#rbzscr')
         id = container.get_attribute_list('src')
         try:
             resp_id = self.session.get(MoovitUrl.BASE_URL_MISS + id[0])
-        except ValueError:
-            print("Check Youre Connection, No respId")
-            rzbid = 'EA30RoO2Ems4sBH8EdUC+zOANAmB8pNMqd0VdbyuV0niFpwkM8hCeyYKQl1qtRfTxEtTj0DPXVrLRVX+ADHRYOUuCowmeGMdVzaGdJ7ZT3xzS5OhG+ZtPTHM9wNxYO811sZn5n7OkWvkCZFNvN7xrMH0qzsquT3Ne8RHQPLBB7/6W4o6hknLO1UfBQJNOyVu58hcGAZKX6JynzJOMh58gmSU5/dSry3U2c6Y45Sa3so='
-            return rzbid
-        soup_id = BeautifulSoup(resp_id.content, 'html.parser')
-        soup_text = soup_id.text
-        matches = re.findall(r'\"(.+?)\"', soup_text)
+        except ValueError as err:
+            print("Check Youre Connection, No resp_id" + err)
+        content_id = BeautifulSoup(resp_id.content, 'html.parser')
+        content_text = content_id.text
+        matches = re.findall(r'\"(.+?)\"', content_text)
         return matches[0]
 
 
