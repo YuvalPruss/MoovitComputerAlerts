@@ -49,7 +49,10 @@ class MoovitCrawler:
         content_id = BeautifulSoup(resp_id.content, 'html.parser')
         content_text = content_id.text
         matches = re.findall(r'\"(.+?)\"', content_text)
-        return matches[0]
+        try:
+            return matches[0]
+        except IndexError as err_in:
+            print("Check Youre Connection, No resp_id" + err_in)
 
 
     def get_headers(self)-> dict:
