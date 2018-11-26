@@ -54,15 +54,13 @@ class MoovitCrawler:
 
     def get_headers(self)-> dict:
         new_dict = self.HEADERS
-        rzbid = self.get_rzbid()
-        if rzbid == "":
-            rzbid = 'EA30RoO2Ems4sBH8EdUC+zOANAmB8pNMqd0VdbyuV0niFpwkM8hCeyYKQl1qtRfTxEtTj0DPXVrLRVX+ADHRYOUuCowmeGMdVzaGdJ7ZT3xzS5OhG+ZtPTHM9wNxYO811sZn5n7OkWvkCZFNvN7xrMH0qzsquT3Ne8RHQPLBB7/6W4o6hknLO1UfBQJNOyVu58hcGAZKX6JynzJOMh58gmSU5/dSry3U2c6Y45Sa3so='
+        try:
+            rzbid = self.get_rzbid()
             new_val = {'rzbid': rzbid}
             new_dict.update(new_val)
-        else:
-            new_val = {'rzbid': rzbid}
-            new_dict.update(new_val)
-        return new_dict
+            return new_dict
+        except ValueError as err:
+            print("Check Your'e Connection, No rzbid" + err)
 
     @staticmethod
     def _serialize_to_json(response: requests.Response) -> Dict:
@@ -78,12 +76,16 @@ class MoovitCrawler:
             'longitude': '34781349',
             'query': searched_location,
         }
-        headers = self.get_headers()
-        response = self.session.get(MoovitUrl.LOCATION_URL,
+        try:
+            headers = self.get_headers()
+            response = self.session.get(MoovitUrl.LOCATION_URL,
                                     params=query,
                                     headers=headers)
-        json_response = self._serialize_to_json(response)
-        return json_response.get('results', [])
+            json_response = self._serialize_to_json(response)
+            return json_response.get('results', [])
+        except ValueError as err:
+            print("Check Your'e Connection, No headers" + err)
+
 
     @classmethod
     def _extract_route_results(cls, token: str) -> List:
